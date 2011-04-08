@@ -155,9 +155,7 @@ void scratch_drag(magic_api * api, int which,
     update_rect->h = (y + 4) - update_rect->y;
 
     // Play the sound
-    api->playsound(snd_effect,
-            (x * 255) / canvas->w,
-            255);
+    api->playsound(snd_effect, (x * 255) / canvas->w, 255);
 }
 
 
