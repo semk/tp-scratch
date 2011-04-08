@@ -37,10 +37,12 @@
 
 // Place to hold the sound effect
 Mix_Chunk * snd_effect;
-
 // Place to hold the current RGB color
 Uint8 scratch_r, scratch_g, scratch_b;
 
+// Local function declaration
+void do_scratch(void * ptr, int which, SDL_Surface * canvas,
+                SDL_Surface * snapshot, int x, int y);
 
 // API version from which this plugin is built against
 Uint32 scratch_api_version(void){
@@ -170,7 +172,7 @@ void do_scratch(void * ptr, int which,
                 // Ask TP to change the canvas...
                 api->putpixel(canvas, x+xx, y+yy,
                         SDL_MapRGB(canvas->format,
-                            ex_r, ex_g, ex_b));
+                            scratch_r, scratch_g, scratch_b));
             }
         }
     }

@@ -11,10 +11,10 @@ SOURCE_PATH := ./src/scratch.c
 ICON_PATH := ./resources/scratch.png
 SOUND_PATH := ./resources/scratch.wav
 PLUGIN_NAME := scratch.so
-CFLAGS := -I$(SDL_LIB_PATH) -D_GNU_SOURCE=1 -D_REENTRANT -I$(TP_LIB_PATH)
+CFLAGS := -I$(SDL_LIB_PATH) -D_GNU_SOURCE=1 -D_REENTRANT -I$(TP_LIB_PATH) -std=c99
 BUILD_DIR := ./build
 
-build:
+build: clean
 	@echo "Compiling plugin"
 	mkdir $(BUILD_DIR)
 	$(CC) --shared $(CFLAGS) $(SOURCE_PATH) -o $(BUILD_DIR)/$(PLUGIN_NAME)
