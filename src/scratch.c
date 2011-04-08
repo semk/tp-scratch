@@ -88,6 +88,13 @@ char * scratch_get_description(magic_api * api, int which){
 }
 
 
+// Record the color from Tux Paint
+void scratch_set_color(magic_api * api, Uint8 r, Uint8 g, Uint8 b){
+    scratch_r = r;
+    scratch_g = g;
+    scratch_b = b;
+}
+
 // We are not using color palette
 int scratch_requires_colors(magic_api * api, int which){
     return(0);
@@ -176,4 +183,19 @@ void do_scratch(void * ptr, int which,
             }
         }
     }
+}
+
+
+void scratch_switchin(magic_api * api, int which, 
+        int mode, SDL_Surface * canvas){
+}
+
+
+void scratch_switchout(magic_api * api, int which, 
+        int mode, SDL_Surface * canvas){
+}
+
+
+int scratch_modes(magic_api * api, int which){
+    return(MODE_PAINT);
 }
