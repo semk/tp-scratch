@@ -77,7 +77,7 @@ SDL_Surface * scratch_get_icon(magic_api * api, int which){
 
 
 // Give Tux Paint our tool's name
-char * ex_get_name(magic_api * api, int which){
+char * scratch_get_name(magic_api * api, int which){
     return(strdup("Scratch"));
 }
 
