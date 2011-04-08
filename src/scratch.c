@@ -44,6 +44,12 @@ Uint8 scratch_r, scratch_g, scratch_b;
 void do_scratch(void * ptr, int which, SDL_Surface * canvas,
                 SDL_Surface * snapshot, int x, int y);
 
+void scratch_drag(magic_api * api, int which,
+                SDL_Surface * canvas,
+                SDL_Surface * snapshot,
+                int ox, int oy, int x, int y,
+                SDL_Rect * update_rect);
+
 // API version from which this plugin is built against
 Uint32 scratch_api_version(void){
     return(TP_MAGIC_API_VERSION);
