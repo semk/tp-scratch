@@ -12,7 +12,9 @@ On Ubuntu you might need to install the following development libs to compile th
 
 `sudo apt-get install libsdl1.2-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-pango-dev libsdl-sound1.2-dev libsdl-ttf2.0-dev libfribidi-dev librsvg2-dev libpaper-dev`
 
-# Compiling and Installing
+Download and compile (run `make`) Tux Paint source code from http://www.tuxpaint.org/download/source/. Do `sudo make install` to install TuxPaint on your system.
+
+# Compiling and Installing the Magic Tool
 To compile run,
 
 `make`
