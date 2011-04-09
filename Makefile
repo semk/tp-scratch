@@ -17,15 +17,15 @@ BUILD_DIR := build
 build: clean
 	@echo "Compiling plugin"
 	mkdir $(BUILD_DIR)
-	$(CC) --shared $(CFLAGS) $(SOURCE_PATH) -o $(BUILD_DIR)/$(PLUGIN_NAME).o
+	$(CC) --shared $(CFLAGS) $(SOURCE_PATH) -o $(BUILD_DIR)/$(PLUGIN_NAME).so
 	@echo "Done."
 
 install:
 	@echo "Installing plugin"
-	cp $(BUILD_DIR)/$(PLUGIN_NAME).o $(TP_PLUGIN_DIR)
+	cp $(BUILD_DIR)/$(PLUGIN_NAME).so $(TP_PLUGIN_DIR)
 	cp $(ICON_PATH) $(TP_DATA_DIR)/images/magic
 	cp $(SOUND_PATH) $(TP_DATA_DIR)/sounds/magic
-	chmod 644 $(TP_PLUGIN_DIR)/$(PLUGIN_NAME).o
+	chmod 644 $(TP_PLUGIN_DIR)/$(PLUGIN_NAME).so
 	chmod 644 $(TP_DATA_DIR)/images/magic/$(PLUGIN_NAME).png
 	chmod 644 $(TP_DATA_DIR)/sounds/magic/$(PLUGIN_NAME).wav
 	@echo "Done."
