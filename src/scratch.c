@@ -30,176 +30,214 @@
 
 
 #include <stdio.h>
-#include <string.h>
-#include "tp_magic_api.h"
-#include "SDL_image.h"
-#include "SDL_mixer.h"
+#include <string.h>  // For "strdup()"
+#include <libintl.h>  // For "gettext()"
 
-// Place to hold the sound effect
+#include "tp_magic_api.h"  // Tux Paint "Magic" tool API header
+#include "SDL_image.h"  // For IMG_Load(), to load our PNG icon
+#include "SDL_mixer.h"  // For Mix_LoadWAV(), to load our sound effects
+
+
+/* Sound effects: */
 Mix_Chunk * snd_effect;
-// Place to hold the current RGB color
+
+/* The current color (an "RGB" value) the user has selected in Tux Paint: */
 Uint8 scratch_r, scratch_g, scratch_b;
 
-// Local function declaration
-void do_scratch(void * ptr, int which, SDL_Surface * canvas,
-                SDL_Surface * snapshot, int x, int y);
 
-void scratch_drag(magic_api * api, int which,
-                SDL_Surface * canvas,
-                SDL_Surface * snapshot,
-                int ox, int oy, int x, int y,
-                SDL_Rect * update_rect);
+/* Our local function prototypes: */
+void scratch_drag(magic_api * api, int which, SDL_Surface * canvas,
+        SDL_Surface * snapshot, int ox, int oy, int x, int y,
+        SDL_Rect * update_rect);
 
-// API version from which this plugin is built against
-Uint32 scratch_api_version(void){
+void scratch_line_callback(void * ptr, int which,
+        SDL_Surface * canvas, SDL_Surface * snapshot,
+        int x, int y);
+
+
+// API Version check
+Uint32 scratch_api_version(void)
+{
     return(TP_MAGIC_API_VERSION);
 }
 
 
-// Plugin initialization.
+// Initialization
 // Loads the sound from TP's data directory.
-int scratch_init(magic_api * api){
+int scratch_init(magic_api * api)
+{
+    int i;
     char fname[1024];
-    sprintf(fname, "%s/sounds/magic/scratch.wav", 
-            api->data_directory);
+
+    snprintf(fname, sizeof(fname),
+            "%s/sounds/magic/%s",
+            api->data_directory, "scratch.wav");
+
+    // Try to load the file!
     snd_effect = Mix_LoadWAV(fname);
-    return(snd_effect != NULL); // Success ?
+
+    return(snd_effect != NULL);
 }
 
 
-// Tell TP that we have only one tool
-int scratch_get_tool_count(magic_api * api){
+// Report our tool count
+int scratch_get_tool_count(magic_api * api)
+{
     return(1);
 }
 
 
-// Load plugin Icon
-SDL_Surface * scratch_get_icon(magic_api * api, int which){
+// Load icons
+SDL_Surface * scratch_get_icon(magic_api * api, int which)
+{
     char fname[1024];
-    sprintf(fname, "%s/images/magic/scratch.png", 
-            api->data_directory);
-    return(IMG_Load(fname)); // Return the icon
+    snprintf(fname, sizeof(fname), "%s/images/magic/%s",
+            api->data_directory, "scratch.png");
+
+    // Try to load the image, and return the results to Tux Paint:
+    return(IMG_Load(fname));
 }
 
 
-// Give Tux Paint our tool's name
-char * scratch_get_name(magic_api * api, int which){
+// Report our "Magic" tool names
+char * scratch_get_name(magic_api * api, int which)
+{
     return(strdup("Scratch"));
 }
 
 
-// Give Tux Paint our tool's description
-char * scratch_get_description(magic_api * api, int which){
+// Report our "Magic" tool descriptions
+char * scratch_get_description(magic_api * api, int which, int mode)
+{
     return(strdup("Click here and drag to make a scratched effect"));
 }
 
 
-// Record the color from Tux Paint
-void scratch_set_color(magic_api * api, Uint8 r, Uint8 g, Uint8 b){
+// Report whether we accept colors
+int scratch_requires_colors(magic_api * api, int which)
+{
+    // We set this color for the background
+    return 1;
+}
+
+
+// Report what modes we work in
+int scratch_modes(magic_api * api, int which)
+{
+    // This plugin doesn't affect the full-screen),
+    // so we're always returning 'MODE_PAINT'
+    return MODE_PAINT;
+}
+
+
+// Shut down
+void scratch_shutdown(magic_api * api)
+{
+    // Free (aka release, aka deallocate) the memory used to store the
+    // sound effect that we loaded during init():
+    Mix_FreeChunk(snd_effect);
+}
+
+
+/* Functions that respond to events in Tux Paint: */
+/* ---------------------------------------------- */
+
+// Affect the canvas on click:
+void scratch_click(magic_api * api, int which, int mode,
+        SDL_Surface * canvas, SDL_Surface * snapshot,
+        int x, int y, SDL_Rect * update_rect)
+{
+    // In our case, a single click (which is also the start of a drag!)
+    // is identical to what dragging does, but just at one point, rather
+    // than across a line.
+    // 
+    // So we 'cheat' here, by calling our draw() function with
+    // (x,y) for both the beginning and end points of a line.
+
+    scratch_drag(api, which, canvas, snapshot, x, y, x, y, update_rect);
+}
+
+
+// Affect the canvas on drag:
+void scratch_drag(magic_api * api, int which, SDL_Surface * canvas,
+        SDL_Surface * snapshot, int ox, int oy, int x, int y,
+        SDL_Rect * update_rect)
+{
+    // Call Tux Paint's "line()" function.
+    api->line((void *) api, which, canvas, snapshot,
+            ox, oy, x, y, 1, scratch_line_callback);
+
+
+    // If we need to, swap the X and/or Y values, so that
+    // (ox,oy) is always the top left, and (x,y) is always the bottom right,
+    // so the values we put inside "update_rect" make sense:
+
+    if (ox > x) { int tmp = ox; ox = x; x = tmp; }
+    if (oy > y) { int tmp = oy; oy = y; y = tmp; }
+
+
+    // Fill in the elements of the "update_rect" SDL_Rect structure
+    // that Tux Paint is sharing with us.
+
+    update_rect->x = ox - 4;
+    update_rect->y = oy - 4;
+    update_rect->w = (x + 4) - update_rect->x;
+    update_rect->h = (y + 4) - update_rect->h;
+
+    // Play the appropriate sound effect
+    api->playsound(snd_effect,
+            (x * 255) / canvas->w, // pan
+            255); // distance
+}
+
+
+// Affect the canvas on release:
+void scratch_release(magic_api * api, int which,
+        SDL_Surface * canvas, SDL_Surface * snapshot,
+        int x, int y, SDL_Rect * update_rect)
+{
+    // Neither of our effects do anything special when the mouse is released
+    // from a click or click-and-drag, so there's no code here...
+}
+
+
+// Accept colors
+void scratch_set_color(magic_api * api, Uint8 r, Uint8 g, Uint8 b)
+{
+    // We simply store the RGB values in the global variables we
+    // declared at the top of this file.
+
     scratch_r = r;
     scratch_g = g;
     scratch_b = b;
 }
 
-// We are not using color palette
-int scratch_requires_colors(magic_api * api, int which){
-    return(0);
-}
 
+/* The Magic Effect Routines! */
+/* -------------------------- */
 
-// Clean up after ourselves when TP quits.
-void scratch_shutdown(magic_api * api){
-    // Release RAM used by our sfx
-    Mix_FreeChunk(snd_effect);
-}
-
-
-// Respond to clicks (mouse button down event)
-void scratch_click(magic_api * api, int which,
-        SDL_Surface * canvas,
-        SDL_Surface * snapshot,
-        int x, int y,
-        SDL_Rect * update_rect){
-    // In our case a click is same as drag. 
-    // So send the same x, y to drag.
-    scratch_drag(api, which, canvas, snapshot,
-            x, y, x, y, update_rect);
-}
-
-
-// Respond to drags (mouse motion events while
-// user is clicking)
-void scratch_drag(magic_api * api, int which,
-        SDL_Surface * canvas,
-        SDL_Surface * snapshot,
-        int ox, int oy, int x, int y,
-        SDL_Rect * update_rect){
-    // Tell Tux Paint to calculate a line between
-    // the two points (ox,oy) and (x,y),
-    // calling our callback function every step
-    api->line((void *) api, which,
-            canvas, snapshot,
-            ox, oy, x, y, 1, // old, new coordinates and step
-            do_scratch); // do the scratch effect
-    // Tell TP what part of canvas was changed.
-    // We'll take top-left and bottom-right.
-    if (ox > x) { int tmp=ox; ox=x; x=tmp; }
-    if (oy > y) { int tmp=oy; oy=y; y=tmp; }
-
-    // Fill in the (x,y) and (w,h) elements of
-    // the update rectangle for Tux Paint
-    // (Our brush is 9x9, centered around (x,y))
-    update_rect->x = ox - 4;
-    update_rect->y = oy - 4;
-    update_rect->w = (x + 4) - update_rect->x;
-    update_rect->h = (y + 4) - update_rect->y;
-
-    // Play the sound
-    api->playsound(snd_effect, (x * 255) / canvas->w, 255);
-}
-
-
-// Respond to releases (mouse button up event)
-void scratch_release(magic_api * api, int which,
-        SDL_Surface * canvas,
-        SDL_Surface * snapshot,
-        int x, int y,
-        SDL_Rect * update_rect){
-} // Nothing to do here
-
-
-// Do the actual effect
-void do_scratch(void * ptr, int which,
-        SDL_Surface * canvas,
-        SDL_Surface * snapshot,
-        int x, int y){
-    // Need to cast, since we get a void ptr
+// Our "callback" function
+void scratch_line_callback(void * ptr, int which,
+        SDL_Surface * canvas, SDL_Surface * snapshot,
+        int x, int y)
+{
+    // For technical reasons, we can't accept a pointer to the "magic_api"
+    // struct, like the other functions do.
     magic_api * api = (magic_api *) ptr;
-    
-    // Quick-and-dirty 9x9 round brush
-    for (int yy = -4; yy <= 4; yy++){
-        for (int xx = -4; xx <= 4; xx++){
-            if (api->in_circle(xx, yy, 4)){ // Round?
-                // Ask TP to change the canvas...
-                api->putpixel(canvas, x+xx, y+yy,
-                        SDL_MapRGB(canvas->format,
-                            scratch_r, scratch_g, scratch_b));
-            }
-        }
-    }
+    int xx, yy;
+
+    // This code draws a single pixel at the (x,y) location.
+    // It's a 1x1 pixel brush
+    api->putpixel(canvas, x, y, SDL_MapRGB(canvas->format,
+                scratch_r, scratch_g, scratch_b));
 }
 
-
-void scratch_switchin(magic_api * api, int which, 
-        int mode, SDL_Surface * canvas){
+// Switch-In event
+void scratch_switchin(magic_api * api, int which, int mode, SDL_Surface * canvas)
+{
 }
 
-
-void scratch_switchout(magic_api * api, int which, 
-        int mode, SDL_Surface * canvas){
-}
-
-
-int scratch_modes(magic_api * api, int which){
-    return(MODE_PAINT);
+// Switch-Out event
+void scratch_switchout(magic_api * api, int which, int mode, SDL_Surface * canvas)
+{
 }
