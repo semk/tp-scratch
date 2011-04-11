@@ -1,7 +1,7 @@
 /*
   scratch.c
 
-  Scratch Magic Tools Plugin
+  'Scratch' Magic Tools Plugin
   Tux Paint - A simple drawing program for children.
 
   Sreejith K <sreejithemk@gmail.com>
@@ -225,11 +225,29 @@ void scratch_line_callback(void * ptr, int which,
     // struct, like the other functions do.
     magic_api * api = (magic_api *) ptr;
     int xx, yy;
+    Uint8 r, g, b;
+    Uint8 step = 1, colorbits = 255;
 
-    // This code draws a single pixel at the (x,y) location.
-    // It's a 1x1 pixel brush
-    api->putpixel(canvas, x, y, SDL_MapRGB(canvas->format,
-                scratch_r, scratch_g, scratch_b));
+    // Fill the circle of radius 4 with centre (x, y) with pixels.
+    for (xx = -4; xx <= 4; xx++)
+    {
+        for (yy = -4; yy<= 4; yy++)
+        {
+            // Check whether the point is in a circle of radius 4
+            if (api->in_circle(xx, yy, 4))
+            {
+                // Convert the Uint32 pixel value to Uint8 value
+                SDL_GetRGB(api->getpixel(canvas, x + xx, y +yy),
+                        canvas->format, &r, &g, &b);
+                if (r % colorbits == 0) r = 0;
+                if (g % colorbits == 0) g = 0;
+                if (b % colorbits == 0) b = 0;
+                api->putpixel(canvas, x + xx, y + yy, 
+                        SDL_MapRGB(canvas->format,
+                        r + step, g + step, b + step));
+            }
+        }
+    }
 }
 
 // Switch-In event
