@@ -1,4 +1,4 @@
-# Makefile to compile Scatch Tool for Tuxpaint
+# Makefile to compile the 'Scratch' Tool for Tuxpaint
 # @author: Sreejith K <sreejithemk@gmail.com>
 # Created on 8th Apr 2011
 
@@ -28,6 +28,13 @@ install:
 	chmod 644 $(TP_PLUGIN_DIR)/$(PLUGIN_NAME).so
 	chmod 644 $(TP_DATA_DIR)/images/magic/$(PLUGIN_NAME).png
 	chmod 644 $(TP_DATA_DIR)/sounds/magic/$(PLUGIN_NAME).wav
+	@echo "Done."
+
+uninstall: clean
+	@echo "Uninstalling installed plugin"
+	rm -f $(TP_PLUGIN_DIR)/$(PLUGIN_NAME).so
+	rm -f $(TP_DATA_DIR)/images/magic/$(PLUGIN_NAME).png
+	rm -f $(TP_DATA_DIR)/sounds/magic/$(PLUGIN_NAME).wav
 	@echo "Done."
 
 clean:
